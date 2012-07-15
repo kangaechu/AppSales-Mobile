@@ -39,6 +39,7 @@ typedef enum DashboardViewMode {
 	NSMutableArray *sortedDailyReports;
 	NSMutableArray *sortedWeeklyReports;
 	NSMutableArray *sortedCalendarMonthReports;
+	NSMutableArray *sortedCalendarYearReports;
 	NSMutableArray *sortedFiscalMonthReports;
 	
 	UIBarButtonItem *downloadReportsButtonItem;
@@ -49,6 +50,7 @@ typedef enum DashboardViewMode {
 @property (nonatomic, retain) NSMutableArray *sortedDailyReports;
 @property (nonatomic, retain) NSMutableArray *sortedWeeklyReports;
 @property (nonatomic, retain) NSMutableArray *sortedCalendarMonthReports;
+@property (nonatomic, retain) NSMutableArray *sortedCalendarYearReports;
 @property (nonatomic, retain) NSMutableArray *sortedFiscalMonthReports;
 @property (nonatomic, assign) DashboardViewMode viewMode;
 @property (nonatomic, retain) GraphView *graphView;
