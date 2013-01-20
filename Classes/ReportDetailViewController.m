@@ -279,9 +279,12 @@
 			sales = [[[salesByProduct allValues] valueForKeyPath:@"@sum.self"] integerValue];
 		}
 		NSString *subtitle = [NSString stringWithFormat:@"%@: %i %@", [[CountryDictionary sharedDictionary] nameForCountryCode:country], sales, sales == 1 ? @"sale" : @"sales"];
-		ReportDetailEntry *entry = [ReportDetailEntry entryWithRevenue:revenue percentage:percentage subtitle:subtitle country:country product:nil];
+        ReportDetailEntry *entry = [ReportDetailEntry entryWithRevenue:revenue percentage:percentage subtitle:subtitle country:country product:nil sales:sales];
 		[sortedEntries addObject:entry];
 	}
+
+    [sortedEntries sortUsingSelector:@selector(compare:)];
+
 	self.countryEntries = [NSArray arrayWithArray:sortedEntries];
 	
 	NSMutableArray *entries = [NSMutableArray array];

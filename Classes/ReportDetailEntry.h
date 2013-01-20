@@ -24,7 +24,9 @@
 @property (nonatomic, retain) NSString *subtitle;
 @property (nonatomic, retain) NSString *country;
 @property (nonatomic, retain) Product *product;
+@property (nonatomic, assign) int sales;
 
 + (id)entryWithRevenue:(float)r percentage:(float)p subtitle:(NSString *)aSubtitle country:(NSString *)countryCode product:(Product *)aProduct;
++ (id)entryWithRevenue:(float)r percentage:(float)p subtitle:(NSString *)aSubtitle country:(NSString *)countryCode product:(Product *)aProduct sales:(int)sales;
 
 @end
