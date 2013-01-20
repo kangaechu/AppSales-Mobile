@@ -82,7 +82,8 @@
 	
 	BOOL iPad = ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad);
 	
-	self.graphView = [[[GraphView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, (iPad) ? 450 : 208)] autorelease];
+	CGFloat graphHeight = iPad ? 450.0 : (self.view.bounds.size.height - 44.0) * 0.5;
+	self.graphView = [[[GraphView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, graphHeight)] autorelease];
 	graphView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
 	graphView.delegate = self;
 	graphView.dataSource = self;
@@ -184,11 +185,13 @@
 		self.graphView.frame = self.view.bounds;
 		self.topView.frame = self.view.bounds;
 		self.productsTableView.alpha = 0.0;
+		self.shadowView.hidden = YES;
 		[self.graphView reloadValuesAnimated:NO];
 	} else {
-		CGFloat graphHeight = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad ? 450 : 208;
+		CGFloat graphHeight = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad ? 450.0 : self.view.bounds.size.height * 0.5;
 		self.graphView.frame = CGRectMake(0, 0, self.view.bounds.size.width, graphHeight);
 		self.topView.frame = CGRectMake(0, 0, self.view.bounds.size.width, graphHeight);
+		self.shadowView.hidden = NO;
 		self.productsTableView.alpha = 1.0;
 		[self.graphView reloadValuesAnimated:NO];
 	}
@@ -236,20 +239,17 @@
 	for (Report *dailyReport in sortedDailyReports) {
 		NSDateComponents *dateComponents = [calendar components:NSYearCalendarUnit | NSMonthCalendarUnit fromDate:dailyReport.startDate];
 		if (!prevDateComponents || (dateComponents.month != prevDateComponents.month || dateComponents.year != prevDateComponents.year)) {
-			if (reportsInCurrentMonth) {
-				ReportCollection *monthCollection = [[[ReportCollection alloc] initWithReports:reportsInCurrentMonth] autorelease];
-				monthCollection.title = [monthFormatter stringFromDate:dailyReport.startDate];
-				[sortedCalendarMonthReports addObject:monthCollection];
-			}
+			// New month discovered. Make a new ReportCollection to gather all the daily reports in this month.
 			reportsInCurrentMonth = [NSMutableArray array];
+			[reportsInCurrentMonth addObject:dailyReport];
+			ReportCollection *monthCollection = [[[ReportCollection alloc] initWithReports:reportsInCurrentMonth] autorelease];
+			monthCollection.title = [monthFormatter stringFromDate:dailyReport.startDate];
+			[sortedCalendarMonthReports addObject:monthCollection];
+		} else {
+			// This report is from the same month as the previous report. Append the daily report to the existing collection.
+			[reportsInCurrentMonth addObject:dailyReport];
 		}
-		[reportsInCurrentMonth addObject:dailyReport];
 		prevDateComponents = dateComponents;
-	}
-	if ([reportsInCurrentMonth count] > 0) {
-		ReportCollection *monthCollection = [[[ReportCollection alloc] initWithReports:reportsInCurrentMonth] autorelease];
-		monthCollection.title = [monthFormatter stringFromDate:[monthCollection firstReport].startDate];
-		[sortedCalendarMonthReports addObject:monthCollection];
 	}
 	
 	// Group daily reports by fiscal month:
@@ -274,8 +274,8 @@
 		[sortedFiscalMonthReports addObject:fiscalMonthCollection];
 		fiscalMonthCollection.title = prevFiscalMonthName;
 	}
-	
 	[self.graphView reloadData];
+	[self reloadTableView];
 }
 
 
