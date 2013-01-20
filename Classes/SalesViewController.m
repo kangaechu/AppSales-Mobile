@@ -33,7 +33,7 @@
 
 @implementation SalesViewController
 
-@synthesize sortedDailyReports, sortedWeeklyReports, sortedCalendarMonthReports, sortedFiscalMonthReports, viewMode;
+@synthesize sortedDailyReports, sortedWeeklyReports, sortedCalendarMonthReports, sortedCalendarYearReports, sortedFiscalMonthReports, viewMode;
 @synthesize graphView, downloadReportsButtonItem;
 @synthesize selectedReportPopover;
 
@@ -47,6 +47,7 @@
 		sortedDailyReports = [NSMutableArray new];
 		sortedWeeklyReports = [NSMutableArray new];
 		sortedCalendarMonthReports = [NSMutableArray new];
+		sortedCalendarYearReports = [NSMutableArray new];
 		sortedFiscalMonthReports = [NSMutableArray new];
 		
 		calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
@@ -100,7 +101,7 @@
 	if (iPad) {
 		segments = [NSArray arrayWithObjects:NSLocalizedString(@"Daily Reports", nil), NSLocalizedString(@"Weekly Reports", nil), NSLocalizedString(@"Calendar Months", nil), NSLocalizedString(@"Fiscal Months", nil), nil];
 	} else {
-		segments = [NSArray arrayWithObjects:NSLocalizedString(@"Reports", nil), NSLocalizedString(@"Months", nil), nil];
+		segments = [NSArray arrayWithObjects:NSLocalizedString(@"Reports", nil), NSLocalizedString(@"Months", nil), NSLocalizedString(@"Year", nil), nil];
 	}
 	UISegmentedControl *tabControl = [[[UISegmentedControl alloc] initWithItems:segments] autorelease];
 	tabControl.segmentedControlStyle = UISegmentedControlStyleBar;
@@ -251,6 +252,33 @@
 		}
 		prevDateComponents = dateComponents;
 	}
+
+    // test
+	NSDateFormatter *yearFormatter = [[[NSDateFormatter alloc] init] autorelease];
+	[yearFormatter setDateFormat:@"yyyy"];
+	[yearFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0]];
+	[sortedCalendarYearReports removeAllObjects];
+	prevDateComponents = nil;
+	NSMutableArray *reportsInCurrentYear = nil;
+	for (Report *dailyReport in sortedDailyReports) {
+		NSDateComponents *dateComponents = [calendar components:NSYearCalendarUnit | NSMonthCalendarUnit fromDate:dailyReport.startDate];
+		if (!prevDateComponents || (dateComponents.year != prevDateComponents.year || dateComponents.year != prevDateComponents.year)) {
+			if (reportsInCurrentYear) {
+				ReportCollection *yearCollection = [[[ReportCollection alloc] initWithReports:reportsInCurrentYear] autorelease];
+				yearCollection.title = [yearFormatter stringFromDate:dailyReport.startDate];
+				[sortedCalendarYearReports addObject:yearCollection];
+			}
+			reportsInCurrentYear = [NSMutableArray array];
+		}
+		[reportsInCurrentYear addObject:dailyReport];
+		prevDateComponents = dateComponents;
+	}
+	if ([reportsInCurrentYear count] > 0) {
+		ReportCollection *yearCollection = [[[ReportCollection alloc] initWithReports:reportsInCurrentYear] autorelease];
+		yearCollection.title = [yearFormatter stringFromDate:[yearCollection firstReport].startDate];
+		[sortedCalendarYearReports addObject:yearCollection];
+	}
+    //
 	
 	// Group daily reports by fiscal month:
 	[sortedFiscalMonthReports removeAllObjects];
@@ -360,7 +388,7 @@
 							   destructiveButtonTitle:nil 
 									otherButtonTitles:NSLocalizedString(@"Daily Reports", nil), NSLocalizedString(@"Weekly Reports", nil), nil] autorelease];
 		self.activeSheet.tag = kSheetTagDailyGraphOptions;
-	} else {
+	} else if (selectedTab == 1) {
 		self.activeSheet = [[[UIActionSheet alloc] initWithTitle:nil 
 											 delegate:self 
 									cancelButtonTitle:NSLocalizedString(@"Cancel", nil) 
@@ -462,6 +490,8 @@
 		} else {
 			return [self.sortedCalendarMonthReports count];
 		}
+	} else if (selectedTab == 2) {
+		return [self.sortedCalendarYearReports count];
 	}
 	return 0;
 }
@@ -476,6 +506,8 @@
 		} else {
 			return [self stackedValuesForReport:[self.sortedCalendarMonthReports objectAtIndex:index]];
 		}
+	} else if (selectedTab == 2) {
+		return [self stackedValuesForReport:[self.sortedCalendarYearReports objectAtIndex:index]];
 	}
 	return [NSArray array];
 }
@@ -493,7 +525,7 @@
 			NSInteger day = [dateComponents day];
 			return [NSString stringWithFormat:@"%i", day];
 		}
-	} else {
+	} else if (selectedTab == 1) {
 		NSDateFormatter *monthFormatter = [[[NSDateFormatter alloc] init] autorelease];
 		[monthFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0]];
 		[monthFormatter setDateFormat:@"MMM"];
@@ -505,6 +537,12 @@
 			id<ReportSummary> report = [self.sortedCalendarMonthReports objectAtIndex:index];
 			return [monthFormatter stringFromDate:report.startDate];
 		}
+	} else {
+		NSDateFormatter *yearFormatter = [[[NSDateFormatter alloc] init] autorelease];
+		[yearFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0]];
+		[yearFormatter setDateFormat:@"YYY"];
+		id<ReportSummary> report = [self.sortedCalendarYearReports objectAtIndex:index];
+		return [yearFormatter stringFromDate:report.startDate];
 	}
 }
 
@@ -526,12 +564,14 @@
 	id<ReportSummary> report = nil;
 	if (selectedTab == 0) {
 		report = [((showWeeks) ? self.sortedWeeklyReports : self.sortedDailyReports) objectAtIndex:index];
-	} else {
+	} else if (selectedTab == 1) {
 		if (showFiscalMonths) {
 			report = [self.sortedFiscalMonthReports objectAtIndex:index];
 		} else {
 			report = [self.sortedCalendarMonthReports objectAtIndex:index];
 		}
+	} else {
+		report = [self.sortedCalendarYearReports objectAtIndex:index];
 	}
     
     float value = 0;
@@ -578,7 +618,7 @@
 		} else {
 			return @"N/A";
 		}
-	} else {
+    } else if (selectedTab == 1) {
 		if ([self.sortedCalendarMonthReports count] > index) {
 			id<ReportSummary> report = [self.sortedCalendarMonthReports objectAtIndex:index];
 			NSDateFormatter *yearFormatter = [[[NSDateFormatter alloc] init] autorelease];
@@ -593,6 +633,8 @@
 		} else {
 			return @"N/A";
 		}
+	} else {
+		return @"N/A";
 	}
 }
 
@@ -639,6 +681,8 @@
 		} else {
 			reports = self.sortedCalendarMonthReports;
 		}
+	} else if (selectedTab == 2) {
+		reports = self.sortedCalendarYearReports;
 	}
 	ReportDetailViewController *vc = [[[ReportDetailViewController alloc] initWithReports:reports selectedIndex:index] autorelease];
 	vc.selectedProduct = [self.selectedProducts lastObject];
@@ -699,7 +743,7 @@
 	if (indexPath.row != 0) {
 		product = [self.visibleProducts objectAtIndex:indexPath.row - 1];
 	}
-	if (selectedTab == 0 || selectedTab == 1) {
+	if (selectedTab == 0 || selectedTab == 1 || selectedTab == 2) {
 		UIButton *latestValueButton = [UIButton buttonWithType:UIButtonTypeCustom];
 		latestValueButton.frame = CGRectMake(0, 0, 64, 28);
 		latestValueButton.titleLabel.font = [UIFont boldSystemFontOfSize:16.0];
@@ -714,12 +758,14 @@
 		id<ReportSummary> latestReport = nil;
 		if (selectedTab == 0) {
 			latestReport = [((showWeeks) ? self.sortedWeeklyReports : self.sortedDailyReports) lastObject];
-		} else {
+		} else if (selectedTab == 1) {
 			if (showFiscalMonths) {
 				latestReport = [self.sortedFiscalMonthReports lastObject];
 			} else {
 				latestReport = [self.sortedCalendarMonthReports lastObject];
 			}
+		} else {
+			latestReport = [self.sortedCalendarYearReports lastObject];
 		}
 		
 		if (viewMode == DashboardViewModeRevenue) {
