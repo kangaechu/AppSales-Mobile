@@ -281,7 +281,7 @@
 		if (transactionType) {
 			NSString *promoType = transaction.promoType;
 			//Some old reports have "FREE" as the promo code identifier for updates, in newer reports, the field is empty.
-			if (promoType && ![promoType isEqualToString:@"FREE"]) { 
+			if (promoType && ![promoType isEqualToString:@"FREE"] && ![promoType isEqualToString:@" "]) {
 				transactionType = [NSString stringWithFormat:@"%@.%@", transactionType, promoType];
 			}
 			NSInteger count = [[[transactionsByType objectForKey:productIdentifier] objectForKey:transactionType] integerValue];
