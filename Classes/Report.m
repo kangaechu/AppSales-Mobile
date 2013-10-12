@@ -466,9 +466,13 @@
 	if (!combinedPaidTransactionTypes) {
 		combinedPaidTransactionTypes = [[NSSet alloc] initWithObjects:
 							@"1",		//iPhone App
+							@"1. ",		//iPhone App
 							@"1F",		//Universal App
+							@"1F. ",	//Universal App
 							@"1T",		//iPad App
+							@"1T. ",	//iPad App
 							@"F1",		//Mac App
+							@"F1. ",	//Mac App
 							@"IA1",		//In-App Purchase
 							@"IA1. ",	//In-App Purchase
 							@"IA9",		//In-App Subscription
